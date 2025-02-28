@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Qiita風備忘録サイト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- ハイライト用 CSS (Atom One Light) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-light.min.css">
+  <!-- Google Fonts: Noto Sans JP (500,700) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    /* 基本設定 */
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      color: #333;
+    }
+    header {
+      background: #fff;
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .container {
+      max-width: 680px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .container h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+    }
+    a {
+      color: #00bcd4;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    /* フィルタ用UI */
+    #filter-container {
+      margin-bottom: 20px;
+    }
+    #filter-container select {
+      padding: 6px 12px;
+      margin-right: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    #filter-container button {
+      padding: 6px 12px;
+      background: #00bcd4;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #filter-container button:hover {
+      background: #0097a7;
+    }
+    /* 記事一覧 */
+    ul.article-list {
+      list-style: none;
+      padding: 0;
+    }
+    ul.article-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px solid #eee;
+      animation: fadeInUp 0.3s ease;
+      cursor: pointer;
+    }
+    ul.article-list li:last-child {
+      border-bottom: none;
+    }
+    .list-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 4px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .article-info {
+      flex: 1;
+    }
+    .article-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .article-meta {
+      font-size: 12px;
+      color: #777;
+      margin-top: 4px;
+    }
+    .article-tag {
+      display: inline-block;
+      background: #e0f7fa;
+      color: #00796b;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* 詳細表示用 */
+    .post {
+      margin-bottom: 20px;
+    }
+    .back-btn {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #00bcd4;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 13px;
+      text-decoration: none;
+      margin-bottom: 12px;
+      transition: background 0.2s ease;
+    }
+    .back-btn:hover {
+      background: #0097a7;
+    }
+    .edit-btn {
+      background: linear-gradient(45deg, #4CAF50, #2E7D32);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      padding: 10px 20px;
+      margin-right: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .edit-btn:hover {
+      background: linear-gradient(45deg, #66BB6A, #388E3C);
+    }
+    .delete-btn {
+      background: linear-gradient(45deg, #E53935, #C62828);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .delete-btn:hover {
+      background: linear-gradient(45deg, #EF5350, #B71C1C);
+    }
+    /* 新規記事リンク */
+    #new-article-link {
+      text-align: right;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>備忘録</h1>
+    </div>
+  </header>
+  <div class="container">
+    <!-- フィルタ用 UI（詳細表示モードでは非表示） -->
+    <div id="filter-container">
+      <select id="tag-filter" title="タグでフィルタ">
+        <option value="ALL">全タグ</option>
+      </select>
+      <select id="year-filter" title="年でフィルタ">
+        <option value="ALL">全投稿年</option>
+      </select>
+      <button id="clear-filter">フィルタ解除</button>
+    </div>
+    <div id="content"></div>
+    <!-- 新規記事リンク（一覧表示時のみ） -->
+    <div id="new-article-link">
+      <a href="editor.html" style="font-size:16px; font-weight:700; color:#00bcd4;">＋ 新規記事を書く</a>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script>
+    /****************************************************************
+     * 動的記事のみで管理する実装
+     * localStorage のキー "dynamicPosts" に記事データを保存します。
+     * 各記事オブジェクトは、title, content, date, tags, updated (任意) を含みます。
+     ****************************************************************/
+    
+    const DYNAMIC_POSTS_KEY = "dynamicPosts";
+    function getDynamicPosts() {
+      const stored = localStorage.getItem(DYNAMIC_POSTS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    }
+    
+    // 日付フォーマット (YYYY-MM-DD)
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      const yyyy = d.getFullYear();
+      const mm = ('0' + (d.getMonth() + 1)).slice(-2);
+      const dd = ('0' + d.getDate()).slice(-2);
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    
+    // Markdown内の最初の画像URLを抽出
+function extractFirstImage(markdown) {
+  const regex = /!\[.*?\]\((.*?)\)/;
+  const match = markdown.match(regex);
+  return match && match[1] ? match[1] : null;
+}
+    
+    // グローバル変数：フィルタ状態
+    let selectedTag = "ALL";
+    let selectedYear = "ALL";
+    
+    // 利用可能タグと投稿年を集約してフィルタ用 select を更新
+    function updateFilterUI(allPosts) {
+      const tagSet = new Set();
+      const yearSet = new Set();
+      allPosts.forEach(post => {
+        if (post.tags && post.tags.length > 0) {
+          post.tags.forEach(tag => tagSet.add(tag.trim()));
+        }
+        if (post.date) {
+          yearSet.add(new Date(post.date).getFullYear());
+        }
+      });
+      // タグセレクト
+      const tagSelect = document.getElementById("tag-filter");
+      let tagOptions = `<option value="ALL">全タグ</option>`;
+      Array.from(tagSet).sort().forEach(tag => {
+        tagOptions += `<option value="${tag}">${tag}</option>`;
+      });
+      tagSelect.innerHTML = tagOptions;
+      tagSelect.value = selectedTag;
+      // 年セレクト
+      const yearSelect = document.getElementById("year-filter");
+      let yearOptions = `<option value="ALL">全投稿年</option>`;
+      Array.from(yearSet).sort((a, b) => a - b).forEach(year => {
+        yearOptions += `<option value="${year}">${year}</option>`;
+      });
+      yearSelect.innerHTML = yearOptions;
+      yearSelect.value = selectedYear;
+    }
+    
+    // 記事一覧レンダリング（フィルタ適用）
+    function renderPostsList() {
+      let posts = getDynamicPosts();
+      // ソート：新着順
+      posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      // フィルタ適用
+      if (selectedTag !== "ALL") {
+        posts = posts.filter(post => post.tags && post.tags.includes(selectedTag));
+      }
+      if (selectedYear !== "ALL") {
+        posts = posts.filter(post => new Date(post.date).getFullYear().toString() === selectedYear);
+      }
+      // 更新フィルタUI
+      updateFilterUI(getDynamicPosts());
+      
+      let html = '<h1>備忘録一覧</h1><ul class="article-list">';
+      posts.forEach(post => {
+        const postUrl = `?postId=${encodeURIComponent(post.id)}`;
+        // プレビュー画像
+        let thumb = "";
+        if (post.content) {
+          const imgUrl = extractFirstImage(post.content);
+          if (imgUrl) {
+            thumb = `<img src="${imgUrl}" alt="thumbnail" class="list-thumbnail">`;
+          }
+        }
+        // タグ表示
+        const tagHTML = (post.tags && post.tags.length > 0) 
+          ? post.tags.map(tag => `<span class="article-tag">${tag.trim()}</span>`).join(" ") 
+          : "";
+        // 投稿日＋更新日表示
+        let dateHTML = post.date ? formatDate(post.date) : "―";
+        if (post.updated && post.updated !== post.date) {
+          dateHTML += ` (更新: ${formatDate(post.updated)})`;
+        }
+        html += `<li onclick="location.href='?postId=${encodeURIComponent(post.id)}'" style="cursor:pointer;">
+                   ${thumb}
+                   <div class="article-info">
+                     <div class="article-title">${post.title}</div>
+                     <div class="article-meta">
+                       投稿日: ${dateHTML} ${ tagHTML ? `| タグ: ${tagHTML}` : "" }
+                     </div>
+                   </div>
+                 </li>`;
+      });
+      html += "</ul>";
+      document.getElementById("content").innerHTML = html;
+    }
+    
+    // 詳細表示：動的記事の場合（削除・編集ボタン付き）
+    function loadDynamicPost(postId) {
+      const posts = getDynamicPosts();
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        const html = marked.parse(post.content);
+        const detailHTML = `<div class="post">
+                              <a href="index.html" class="back-btn">&larr; 一覧に戻る</a>
+                              <hr>
+                              <h1>${post.title}</h1>
+                              ${html}
+                            </div>
+                            <div style="text-align:right; margin-top:12px;">
+                              <a href="editor.html?editing=${encodeURIComponent(post.id)}">
+                                <button class="edit-btn">編集</button>
+                              </a>
+                              <button class="delete-btn" onclick="deleteArticle('${post.id}')">削除</button>
+                            </div>`;
+        document.getElementById("content").innerHTML = detailHTML;
+      } else {
+        document.getElementById("content").innerHTML = `<p>記事が見つかりません</p>`;
+      }
+    }
+    
+    // 削除処理：動的記事削除（確認後）
+    function deleteArticle(postId) {
+      if (confirm("この記事を削除してもよろしいですか？")) {
+        let posts = getDynamicPosts();
+        posts = posts.filter(p => p.id !== postId);
+        localStorage.setItem(DYNAMIC_POSTS_KEY, JSON.stringify(posts));
+        alert("記事を削除しました。");
+        window.location.href = "index.html";
+      }
+    }
+    
+    // フィルタイベント設定
+    document.getElementById("tag-filter").addEventListener("change", (e) => {
+      selectedTag = e.target.value;
+      renderPostsList();
+    });
+    document.getElementById("year-filter").addEventListener("change", (e) => {
+      selectedYear = e.target.value;
+      renderPostsList();
+    });
+    document.getElementById("clear-filter").addEventListener("click", () => {
+      selectedTag = "ALL";
+      selectedYear = "ALL";
+      document.getElementById("tag-filter").value = "ALL";
+      document.getElementById("year-filter").value = "ALL";
+      renderPostsList();
+    });
+    
+    // 初期処理：URLパラメータにより一覧 or 詳細表示を切り替え
+    (function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get("postId");
+      // 詳細表示ならフィルタUIと新規記事リンクは非表示
+      if (postId) {
+        document.getElementById("filter-container").style.display = "none";
+        document.getElementById("new-article-link").style.display = "none";
+        loadDynamicPost(postId);
+      } else {
+        renderPostsList();
+      }
+    })();
+  </script>
+</body>
+</html>
